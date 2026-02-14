@@ -13,21 +13,24 @@ from onnx_infer import SignONNX
 app = FastAPI()
 
 # -----------------------------
-# CORS Configuration
+# CORS Configuration (PRODUCTION)
 # -----------------------------
+# Set this in Render:
+# FRONTEND_ORIGINS=https://your-app.vercel.app,https://your-custom-domain.com
+
 origins_env = os.getenv("FRONTEND_ORIGINS", "")
 ALLOWED_ORIGINS = [o.strip() for o in origins_env.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS if ALLOWED_ORIGINS else ["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["POST", "OPTIONS"],
     allow_headers=["Content-Type"],
 )
 
 # -----------------------------
-# Load Model Once at Startup
+# Load Model ONCE at startup
 # -----------------------------
 model = SignONNX(
     "model/sign_model.onnx",
@@ -52,13 +55,15 @@ class PredictRequest(BaseModel):
     hands: List[Hand]
 
 # -----------------------------
-# Prediction Route
+# Routes
 # -----------------------------
 @app.post("/predict")
 def predict(req: PredictRequest):
-
     if not req.hands:
-        return {"label": "", "confidence": 0.0}
+        return {
+            "label": "",
+            "confidence": 0.0
+        }
 
     features = build_features([h.dict() for h in req.hands])
     label, confidence = model.predict(features)
@@ -69,8 +74,10 @@ def predict(req: PredictRequest):
     }
 
 # -----------------------------
-# Health Check (Render)
+# Health Check (Render-friendly)
 # -----------------------------
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {
+        "status": "ok"
+    }
