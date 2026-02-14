@@ -11,7 +11,8 @@ def build_features(hands):
     returns: np.array shape (126,)
     """
 
-    hand_arrays = []
+    left = np.zeros((21, 3), np.float32)
+    right = np.zeros((21, 3), np.float32)
 
     for hand in hands:
         pts = np.array(
@@ -19,19 +20,16 @@ def build_features(hands):
             dtype=np.float32
         )
 
-        # wrist-relative
+        # Wrist-relative normalization
         pts -= pts[0]
 
-        # scale normalize (palm size)
+        # Scale normalization (palm size)
         scale = np.linalg.norm(pts[9]) + 1e-6
         pts /= scale
 
-        hand_arrays.append(pts)
-
-    # canonical ordering: leftmost x first
-    hand_arrays.sort(key=lambda h: h[0, 0])
-
-    left = hand_arrays[0] if len(hand_arrays) > 0 else np.zeros((21, 3), np.float32)
-    right = hand_arrays[1] if len(hand_arrays) > 1 else np.zeros((21, 3), np.float32)
+        if hand["handedness"] == "Left":
+            left = pts
+        elif hand["handedness"] == "Right":
+            right = pts
 
     return np.concatenate([left.flatten(), right.flatten()])
